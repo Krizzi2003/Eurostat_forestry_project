@@ -352,5 +352,45 @@ def economic_aggregates_of_forestry(
     ).reset_index()
 
     # merge na final_df (outer = unija država/godina)
-    merged = final_df.merge(wide, on=["country", "year"], how="outer")
+    merged = final_df.merge(wide, on=["country", "year"], how="left")
+    return merged
+
+def add_awu_forestry_logging_features(final_df: pd.DataFrame, src_df: pd.DataFrame) -> pd.DataFrame:
+    df = src_df.copy()
+    base = final_df.copy()
+
+    if "geo\\TIME_PERIOD" in df.columns:
+        df = df.rename(columns={"geo\\TIME_PERIOD": "country"})
+
+    years = ["2021", "2022"]
+    keep_cols = ["country", "unit"] + years
+    df = df[keep_cols]
+
+    # wide -> long
+    long = df.melt(
+        id_vars=["country", "unit"],
+        value_vars=years,
+        var_name="year",
+        value_name="value"
+    )
+    long["year"] = long["year"].astype(int)
+
+    # suma po drzavi/godini (NaN ako su sve NaN)
+    summed = (long.groupby(["country", "year"], as_index=False)["value"]
+              .sum(min_count=1)
+              .rename(columns={"value": "awu_total"}))
+
+    final_cols = base[["country", "year",
+                       "output_of_forestry_mil_euro",
+                       "value_added_forestry_mil_euro"]]
+
+    ratio = summed.merge(final_cols, on=["country", "year"], how="left")
+
+    ratio["output_per_awu"] = ratio["output_of_forestry_mil_euro"] / ratio["awu_total"]
+    ratio["gva_per_awu"] = ratio["value_added_forestry_mil_euro"] / ratio["awu_total"]
+
+    features = ratio[["country", "year", "awu_total", "output_per_awu", "gva_per_awu"]]
+
+    # merge na final_df
+    merged = final_df.merge(features, on=["country", "year"], how="left")
     return merged

@@ -139,6 +139,14 @@ final_df = ct.economic_aggregates_of_forestry(final_df, pd.read_sql("SELECT * FR
 
 #----------------------------
 
+final_df = ct.add_awu_forestry_logging_features(final_df, pd.read_sql("SELECT * FROM awu_forestry_logging", engine))
+
+#Gotova tablica awu_forestry_logging
+
+#----------------------------
+
+
+
 
 
 print("----------------------------\n")
