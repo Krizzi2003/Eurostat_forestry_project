@@ -61,6 +61,10 @@ final_df = ct.add_sawnwood_trade_species_features(final_df, pd.read_sql("SELECT 
 
 #Ubacivanje iz tablice roundwood_fuelwood_basic
 
+#roundwood_fuelwood_basic_roundwood_imp_exp
+final_df = ct.roundwood_fuelwood_basic_imp_exp_features(final_df, pd.read_sql("SELECT * FROM roundwood_fuelwood_basic", engine), {"IMP": "import", "EXP": "export"})
+
+
 #roundwood_fuelwood_basic_roundwood
 final_df = ct.basic_function(final_df, pd.read_sql("SELECT * FROM roundwood_fuelwood_basic", engine), ["TOTAL"], ["RW"], "THS_M3", {"RW": "roundwood", "PRD": "production"})
 #roundwood_fuelwood_basic_fuelwood
@@ -118,6 +122,14 @@ final_df = ct.basic_function(final_df, pd.read_sql("SELECT * FROM sawnwood_panel
 
 #----------------------------
 
+final_df = ct.secondary_wood_trade_add_features(final_df, pd.read_sql("SELECT * FROM secondary_wood_trade", engine), {"IMP": "import", "EXP": "export"})
+
+#Gotova tablica secondary_wood_trade
+
+#----------------------------
+
+final_df = ct.secondary_paper_products_features(final_df, pd.read_sql("SELECT * FROM secondary_paper_products", engine), mapa = {"IMP": "import", "IMP_XEU": "import","EXP": "export","EXP_XEU": "export"})
+
 #Ubacivanje iz tablice pulp_paper_paperboard
 
 #pulp_paper_paperboard_wood_pulp, !!! druga mjerna jedinica (THS_T)
@@ -144,9 +156,6 @@ final_df = ct.add_awu_forestry_logging_features(final_df, pd.read_sql("SELECT * 
 #Gotova tablica awu_forestry_logging
 
 #----------------------------
-
-
-
 
 
 print("----------------------------\n")

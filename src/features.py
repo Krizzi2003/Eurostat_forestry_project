@@ -394,3 +394,139 @@ def add_awu_forestry_logging_features(final_df: pd.DataFrame, src_df: pd.DataFra
     # merge na final_df
     merged = final_df.merge(features, on=["country", "year"], how="left")
     return merged
+
+def roundwood_fuelwood_basic_imp_exp_features(final_df: pd.DataFrame, src_df: pd.DataFrame, mapa: dict) -> pd.DataFrame:
+    df = src_df.copy()
+
+    # preimenuj geo kolonu u 'country'
+    if "geo\\TIME_PERIOD" in df.columns:
+        df = df.rename(columns={"geo\\TIME_PERIOD": "country"})
+
+    #Filtriram samo total, kubične metre i import/export 
+    df = df[df["treespec"].isin(["TOTAL"])]
+    df = df[df["stk_flow"].isin(["IMP", "EXP"])]
+    df = df[df["unit"].isin(["THS_M3"])]
+
+    # uzmi samo godine koje te zanimaju
+    years = ["2021", "2022"]
+    keep_cols = ["country", "treespec", "stk_flow", "unit"] + years
+    df = df[keep_cols]
+
+    # wide -> long
+    long = df.melt(
+        id_vars=["country", "treespec", "stk_flow", "unit"],
+        value_vars=years,
+        var_name="year",
+        value_name="value"
+    )
+
+    long["year"] = long["year"].astype(int)
+
+    long["feature"] = (
+        "basic_wood_products_" + 
+        long["stk_flow"].map(mapa)
+    )
+
+    # pivot: jedan red = (country, year), stupci = feature-i
+    wide = long.pivot_table(
+        index=["country", "year"],
+        columns="feature",
+        values="value",
+        aggfunc=lambda s: s.sum(min_count=1)
+    ).reset_index()
+
+    # merge na final_df (outer = unija država/godina)
+    merged = final_df.merge(wide, on=["country", "year"], how="outer")
+    return merged
+
+def secondary_wood_trade_add_features(final_df: pd.DataFrame, src_df: pd.DataFrame, mapa: dict) -> pd.DataFrame:
+    df = src_df.copy()
+
+    # preimenuj geo kolonu u 'country'
+    if "geo\\TIME_PERIOD" in df.columns:
+        df = df.rename(columns={"geo\\TIME_PERIOD": "country"})
+
+    #Filtriram samo total, kubične metre i import/export 
+    df = df[df["treespec"].isin(["TOTAL"])]
+    df = df[df["unit"].isin(["THS_EUR"])]
+    df = df[df["prod_wd"].isin(["SW"])]
+
+    # uzmi samo godine koje te zanimaju
+    years = ["2021", "2022"]
+    keep_cols = ["country", "treespec", "prod_wd", "unit", "stk_flow"] + years
+    df = df[keep_cols]
+
+    # wide -> long
+    long = df.melt(
+        id_vars=["country", "treespec", "prod_wd", "unit", "stk_flow"],
+        value_vars=years,
+        var_name="year",
+        value_name="value"
+    )
+
+    long["year"] = long["year"].astype(int)
+
+    long["feature"] = (
+        "secondary_wood_trade_" +
+        long["stk_flow"].map(mapa) 
+        
+    )
+
+    # pivot: jedan red = (country, year), stupci = feature-i
+    wide = long.pivot_table(
+        index=["country", "year"],
+        columns="feature",
+        values="value",
+        aggfunc=lambda s: s.sum(min_count=1)
+    ).reset_index()
+
+    # merge na final_df (outer = unija država/godina)
+    merged = final_df.merge(wide, on=["country", "year"], how="outer")
+    return merged
+
+def secondary_paper_products_features(final_df: pd.DataFrame, src_df: pd.DataFrame, mapa: dict) -> pd.DataFrame:
+    df = src_df.copy()
+
+    # preimenuj geo kolonu u 'country'
+    if "geo\\TIME_PERIOD" in df.columns:
+        df = df.rename(columns={"geo\\TIME_PERIOD": "country"})
+
+
+    #imp/exp u tisucama eura eurima 
+    df = df[df["stk_flow"].isin(["IMP", "EXP", "EXP_XEU", "IMP_XEU"])] # filtriram samo import i export
+    df = df[df["unit"].isin(["THS_EUR"])] # filtriram samo jedinicu tisuca eura
+    df = df[df["prod_wd"].isin(["SP"])] #uzimam samo secondary paper products
+
+    # uzmi samo godine koje te zanimaju u ovom slučaju samo 2021 i 2022
+    years = ["2021", "2022"]
+    keep_cols = ["country", "stk_flow", "prod_wd", "unit"] + years    
+    df = df[keep_cols]
+
+    # wide -> long: 2021/2022 u jedan stupac 'year'
+    long = df.melt(
+        id_vars=["country", "stk_flow", "prod_wd", "unit"],
+        value_vars=years,
+        var_name="year",
+        value_name="value"
+    )
+
+    long["year"] = long["year"].astype(int)
+
+    long["feature"] = (
+        "secondary_paper_products_" +
+        long["stk_flow"].map(mapa) 
+        
+    )
+
+    # pivot: jedan red = (country, year), stupci = feature-i
+    wide = long.pivot_table(
+        index=["country", "year"],
+        columns="feature",
+        values="value",
+        aggfunc=lambda s: s.sum(min_count=1)
+    ).reset_index()
+
+
+    # merge na final_df (outer = unija država/godina)
+    merged = final_df.merge(wide, on=["country", "year"], how="outer")
+    return merged
