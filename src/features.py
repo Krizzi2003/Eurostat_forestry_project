@@ -530,3 +530,121 @@ def secondary_paper_products_features(final_df: pd.DataFrame, src_df: pd.DataFra
     # merge na final_df (outer = unija država/godina)
     merged = final_df.merge(wide, on=["country", "year"], how="outer")
     return merged
+
+def secondary_wood_products_features(final_df: pd.DataFrame, src_df: pd.DataFrame) -> pd.DataFrame:
+    df = src_df.copy()
+
+    # preimenuj geo kolonu u 'country'
+    if "geo\\TIME_PERIOD" in df.columns:
+        df = df.rename(columns={"geo\\TIME_PERIOD": "country"})
+
+    # filtriraj samo total, kubične metre 
+    df = df[df["unit"].isin(["THS_M3"])]
+    df = df[df["prod_wd"].isin(["GLT_CLT"])]
+
+    # uzmi samo godine koje te zanimaju
+    years = ["2021", "2022"]
+    keep_cols = ["country", "prod_wd", "unit"] + years
+    df = df[keep_cols]
+
+    # wide -> long
+    long = df.melt(
+        id_vars=["country", "prod_wd", "unit"],
+        value_vars=years,
+        var_name="year",
+        value_name="value"
+    )
+
+    long["year"] = long["year"].astype(int)
+
+    long["feature"] = (
+        "secondary_wood_products_production" 
+    )
+
+    # pivot: jedan red = (country, year), stupci = feature-i
+    wide = long.pivot_table(
+        index=["country", "year"],
+        columns="feature",
+        values="value",
+        aggfunc=lambda s: s.sum(min_count=1)
+    ).reset_index()
+
+    merged = final_df.merge(wide, on=["country", "year"], how="outer")
+    return merged
+
+
+def employment_features(final_df: pd.DataFrame, src_df: pd.DataFrame) -> pd.DataFrame:
+    df = src_df.copy()
+
+    # preimenuj geo kolonu u 'country'
+    if "geo\\TIME_PERIOD" in df.columns:
+        df = df.rename(columns={"geo\\TIME_PERIOD": "country"})
+
+    # filtriraj samo total, broj zaposlenih 
+    df = df[df["sex"].isin(["T"])]
+    df = df[df["isced11"].isin(["TOTAL", "ED5-8"])]
+    df = df[df["wstatus"].isin(["EMP"])]
+
+
+    # uzmi samo godine koje te zanimaju
+    years = ["2021", "2022"]
+    keep_cols = ["country", "isced11", "wstatus", "nace_r2"] + years
+    df = df[keep_cols]
+
+    # wide -> long
+    long = df.melt(
+        id_vars=["country", "isced11", "wstatus", "nace_r2"],
+        value_vars=years,
+        var_name="year",
+        value_name="value"
+    )
+
+    long["year"] = long["year"].astype(int)
+
+
+    long["feature"] = (
+        "employment" + long["isced11"].map({"TOTAL": "_all_education_levels", "ED5-8": "_high_education_levels"})
+    )
+
+    # pivot: jedan red = (country, year), stupci = feature-i
+    wide = long.pivot_table(
+        index=["country", "year"],
+        columns="feature",
+        values="value",
+        aggfunc=lambda s: s.sum(min_count=1)
+    ).reset_index()
+
+    #omjer visokoeduciranih i svih zaposlenih
+    wide["high_education_emp/all_emp_share"] = wide["employment_high_education_levels"] / wide["employment_all_education_levels"]
+    wide.drop  (columns=["employment_high_education_levels", "employment_all_education_levels"], inplace=True)
+
+    #ubacujem stupac omjera visokoeduciranih i svih zaposlenih u tablicu i idem dalje
+    merged = final_df.merge(wide, on=["country", "year"], how="left")
+
+    #--------------------------
+    #krecem izradu stupaca za razlicite aktivnosti u sumarstvu (nace_r2)
+
+    long["feature"] = (
+        long["nace_r2"].map(
+            {
+            "A02" : "employment_forestry_logging",
+            "C16" : "employment_manufacturing_wood_products",
+            "C17" : "employment_manufacturing_paper_products",
+            "C31" : "employment_manufacturing_furniture"}
+        )
+    )
+
+    long = long[long["isced11"] == "TOTAL"]
+
+    wide = long.pivot_table(
+        index=["country", "year"],
+        columns="feature",
+        values="value",
+        aggfunc=lambda s: s.sum(min_count=1)
+    ).reset_index()
+
+    merged = merged.merge(wide, on=["country", "year"], how="left")
+
+    return merged
+
+    

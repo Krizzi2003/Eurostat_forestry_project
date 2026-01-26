@@ -130,6 +130,12 @@ final_df = ct.secondary_wood_trade_add_features(final_df, pd.read_sql("SELECT * 
 
 final_df = ct.secondary_paper_products_features(final_df, pd.read_sql("SELECT * FROM secondary_paper_products", engine), mapa = {"IMP": "import", "IMP_XEU": "import","EXP": "export","EXP_XEU": "export"})
 
+#Gotova tablica secondary_paper_products
+
+#----------------------------
+
+final_df = ct.secondary_wood_products_features(final_df, pd.read_sql("SELECT * FROM secondary_wood_production", engine))
+
 #Ubacivanje iz tablice pulp_paper_paperboard
 
 #pulp_paper_paperboard_wood_pulp, !!! druga mjerna jedinica (THS_T)
@@ -156,6 +162,8 @@ final_df = ct.add_awu_forestry_logging_features(final_df, pd.read_sql("SELECT * 
 #Gotova tablica awu_forestry_logging
 
 #----------------------------
+
+final_df = ct.employment_features(final_df, pd.read_sql("SELECT * FROM employment_lfs_rev2", engine))
 
 
 print("----------------------------\n")
