@@ -165,6 +165,22 @@ final_df = ct.add_awu_forestry_logging_features(final_df, pd.read_sql("SELECT * 
 
 final_df = ct.employment_features(final_df, pd.read_sql("SELECT * FROM employment_lfs_rev2", engine))
 
+#Gotova tablica employment_lfs_rev2
+
+#----------------------------
+
+final_df = ct.generation_of_waste_features(final_df, pd.read_sql("SELECT * FROM waste_generation", engine))
+
+#Gotova tablica waste_generation
+
+#----------------------------
+
+final_df = ct.treatment_of_waste_features(final_df, pd.read_sql("SELECT * FROM waste_treatment", engine))
+
+#Gotova tablica waste_treatment
+
+#----------------------------
+
 
 print("----------------------------\n")
 

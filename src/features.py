@@ -616,7 +616,7 @@ def employment_features(final_df: pd.DataFrame, src_df: pd.DataFrame) -> pd.Data
 
     #omjer visokoeduciranih i svih zaposlenih
     wide["high_education_emp/all_emp_share"] = wide["employment_high_education_levels"] / wide["employment_all_education_levels"]
-    wide.drop  (columns=["employment_high_education_levels", "employment_all_education_levels"], inplace=True)
+    wide.drop(columns=["employment_high_education_levels", "employment_all_education_levels"], inplace=True)
 
     #ubacujem stupac omjera visokoeduciranih i svih zaposlenih u tablicu i idem dalje
     merged = final_df.merge(wide, on=["country", "year"], how="left")
@@ -647,4 +647,93 @@ def employment_features(final_df: pd.DataFrame, src_df: pd.DataFrame) -> pd.Data
 
     return merged
 
-    
+
+def generation_of_waste_features(final_df: pd.DataFrame, src_df: pd.DataFrame) -> pd.DataFrame:
+    df = src_df.copy()
+
+    # preimenuj geo kolonu u 'country'
+    if "geo\\TIME_PERIOD" in df.columns:
+        df = df.rename(columns={"geo\\TIME_PERIOD": "country"})
+
+    df = df[df["unit"].isin(["T"])] # filtriram samo po tonama
+    df = df[df["hazard"].isin(["HAZ_NHAZ"])] # uzimam i hazardni i nehazardni otpad
+    df = df[df["nace_r2"].isin(["A"])] # uzimam samo podatke vezane za sektor A - Agriculture, forestry and fishing
+
+    years = ["2022"]
+    keep_cols = ["country", "waste", "unit", "hazard", "nace_r2"] + years
+    df = df[keep_cols]
+
+    # wide -> long
+    long = df.melt(
+        id_vars=["country", "waste", "unit", "hazard", "nace_r2"],
+        value_vars=years,
+        var_name="year",
+        value_name="value"
+    )
+
+    long["year"] = long["year"].astype(int)
+
+    long["feature"] = (
+        "generation_of_waste_" + long["waste"].map(
+            {
+                "W075": "wood",
+                "W072": "paper"
+            }
+        )
+    )
+
+    # pivot: jedan red = (country, year), stupci = feature-i
+    wide = long.pivot_table(
+        index=["country", "year"],
+        columns="feature",
+        values="value",
+        aggfunc=lambda s: s.sum(min_count=1)
+    ).reset_index()
+
+    merged = final_df.merge(wide, on=["country", "year"], how="left")
+    return merged
+
+def treatment_of_waste_features(final_df: pd.DataFrame, src_df: pd.DataFrame) -> pd.DataFrame:
+    df = src_df.copy()
+
+    # preimenuj geo kolonu u 'country'
+    if "geo\\TIME_PERIOD" in df.columns:
+        df = df.rename(columns={"geo\\TIME_PERIOD": "country"})
+
+    df = df[df["unit"].isin(["T"])] # filtriram samo po tonama
+    df = df[df["hazard"].isin(["HAZ_NHAZ"])] # uzimam i hazardni i nehazardni otpad
+    df = df[df["wst_oper"].isin(["TRT"])] # uzimam samo podatke vezane za waste treatment
+
+    years = ["2022"]
+    keep_cols = ["country", "waste", "unit", "hazard", "wst_oper"] + years
+    df = df[keep_cols]
+
+    # wide -> long
+    long = df.melt(
+        id_vars=["country", "waste", "unit", "hazard", "wst_oper"],
+        value_vars=years,
+        var_name="year",
+        value_name="value"
+    )
+
+    long["year"] = long["year"].astype(int)
+
+    long["feature"] = (
+        "treatment_of_waste_" + long["waste"].map(
+            {
+                "W075": "wood",
+                "W072": "paper"
+            }
+        )
+    )
+
+    # pivot: jedan red = (country, year), stupci = feature-i
+    wide = long.pivot_table(
+        index=["country", "year"],
+        columns="feature",
+        values="value",
+        aggfunc=lambda s: s.sum(min_count=1)
+    ).reset_index()
+
+    merged = final_df.merge(wide, on=["country", "year"], how="left")
+    return merged
