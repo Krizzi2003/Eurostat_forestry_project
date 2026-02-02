@@ -9,6 +9,10 @@ and machine learning.
 The feature engineering pipeline and project structure are implemented, while setup
 instructions and analytical components are still being refined.
 
+The final output is a single country–year feature table (2021–2022),
+exported as a CSV file and designed for downstream statistical and
+machine learning analysis.
+
 ---
 
 ## Project structure
@@ -39,21 +43,32 @@ instructions and analytical components are still being refined.
 ## Features included (examples)
 
 - **Production features**
-  - roundwood
-  - fuelwood
-  - industrial roundwood (coniferous / non-coniferous)
+  - roundwood (thousand m³)
+  - fuelwood (thousand m³)
+  - industrial roundwood (coniferous / non-coniferous, thousand m³)
   - pellets, panels, pulp and paper products
 
 - **Trade features**
-  - import share for industrial roundwood
-  - import share for sawnwood
+  - import share of industrial roundwood
+  *(IMP / (IMP + EXP), physical units)*
+  - import share of sawnwood
+  *(IMP / (IMP + EXP), physical units)*
 
 - **Ownership structure**
   - private forests share
+  *(ratio of privately owned forest area to total forest area)*
 
 - **Economic aggregates (million EUR)**
   - `P1` – Output of forestry and connected secondary activities
   - `B1G` – Gross value added of forestry
+
+- **Labour and employment**
+  - annual work units (AWU) in forestry and logging
+  - employment by sector (Labour Force Survey, NACE Rev. 2)
+
+- **Environmental indicators**
+  - waste generation related to forestry and wood processing
+  - waste treatment by waste type (wood and paper-related waste)
 
 ---
 
@@ -64,6 +79,8 @@ All data is sourced from official **Eurostat forestry datasets**, including:
 - industrial roundwood and sawnwood trade
 - ownership structure of forests
 - economic aggregates of the forestry sector
+- employment and labour input in forestry and related wood-based industries
+- waste generation and treatment
 
 ---
 
